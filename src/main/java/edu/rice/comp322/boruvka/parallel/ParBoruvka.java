@@ -8,6 +8,7 @@ import edu.rice.hj.api.SuspendableException;
 
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * This class must be modified.
@@ -16,7 +17,8 @@ import java.util.Queue;
  */
 public final class ParBoruvka extends AbstractBoruvka implements BoruvkaFactory<ParComponent, ParEdge> {
 
-    protected final Queue<ParComponent> nodesLoaded = new LinkedList<>();
+    protected final ConcurrentLinkedQueue<ParComponent> nodesLoaded = new ConcurrentLinkedQueue<>();
+    protected ParComponent ans =  null;
 
     public ParBoruvka() {
         super();
@@ -44,39 +46,77 @@ public final class ParBoruvka extends AbstractBoruvka implements BoruvkaFactory<
 
     @Override
     public void runIteration(int nthreads) throws SuspendableException {
-        computeBoruvka(nodesLoaded);
+        computeBoruvka(nodesLoaded, nthreads);
     }
 
-    private void computeBoruvka(final Queue<ParComponent> nodesLoaded) {
+    private void computeBoruvka(final Queue<ParComponent> nodesLoaded, int nthreads) {
 
-        ParComponent loopNode = null;
 
-        // START OF EDGE CONTRACTION ALGORITHM
-        while (!nodesLoaded.isEmpty()) {
+        final Thread[] threads = new Thread[nthreads];
 
-            // poll() removes first element (node loopNode) from the nodesLoaded work-list
-            loopNode = nodesLoaded.poll();
+        for (int i = 0; i < nthreads; i++) {
+            threads[i] = new Thread(()-> {
 
-            if (loopNode.isDead) {
-                continue; // node loopNode has already been merged
-            }
+                ParComponent loopNode = null;
+                while ((loopNode = nodesLoaded.poll()) != null) {
 
-            final Edge<ParComponent> e = loopNode.getMinEdge(); // retrieve loopNode's edge with minimum cost
-            if (e == null) {
-                break; // done - we've contracted the graph to a single node
-            }
+                    if (!loopNode.lock.tryLock()) {
+                        continue;
+                    }
+                    if (loopNode.isDead){
+                        loopNode.lock.unlock();
+                        continue;
+                    }
+                    final Edge<ParComponent> minEdge = loopNode.getMinEdge();
 
-            final ParComponent other = e.getOther(loopNode);
-            other.isDead = true;
-            loopNode.merge(other, e.weight()); // merge node other into node loopNode
-            nodesLoaded.add(loopNode); // add newly merged loopNode back in the work-list
+                    if (minEdge == null) {
+                        ans = loopNode;
+                        break;
+                    }
+
+                    final ParComponent adjNode = minEdge.getOther(loopNode);
+
+                    if (!(adjNode.lock.tryLock())) {
+                        loopNode.lock.unlock();
+                        nodesLoaded.add(loopNode);
+                        continue;
+                    }
+
+                    if (adjNode.isDead) {
+                        adjNode.lock.unlock();
+                        loopNode.lock.unlock();
+                        nodesLoaded.add(loopNode);
+                        continue;
+                    }
+                    adjNode.isDead = true;
+                    loopNode.merge(adjNode, minEdge.weight());
+                    loopNode.lock.unlock();
+                    adjNode.lock.unlock();
+                    nodesLoaded.add(loopNode);
+
+                }
+
+            });
+            threads[i].start();
+
 
         }
-        // END OF EDGE CONTRACTION ALGORITHM
-        if (loopNode != null) {
-            totalEdges = loopNode.totalEdges();
-            totalWeight = loopNode.totalWeight();
+
+        for (int i = 0; i < nthreads; i++) {
+            try {
+                threads[i].join();
+            } catch (InterruptedException e) {
+                System.out.println("Interrupted");
+            }
         }
+        if (ans != null) {
+            totalEdges = ans.totalEdges();
+            totalWeight = ans.totalWeight();
+
+        }
+
+
+
     }
 
     @Override

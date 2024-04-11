@@ -5,6 +5,8 @@ import edu.rice.comp322.boruvka.Edge;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This class may be modified.
@@ -18,6 +20,8 @@ public final class ParComponent extends Component<ParComponent> {
     public double totalWeight = 0;
     public long totalEdges = 0;
     public boolean isDead = false;
+
+    public final Lock lock = new ReentrantLock();
 
 
     protected ParComponent(final int nodeId) {
