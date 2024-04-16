@@ -6,14 +6,14 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=16000m
 #SBATCH --time=01:00:00
-#SBATCH --mail-user=NETID@rice.edu # TODO: Input your net id
+#SBATCH --mail-user=gab11@rice.edu # TODO: Input your net id
 #SBATCH --mail-type=ALL
 #SBATCH --export=ALL
 #SBATCH --partition=scavenge
 #SBATCH --exclusive
 #SBATCH --reservation=comp322
  
-cd /home/$USER/hw4-GITID # TODO: Change path to your hw 4 folder
+cd /home/$USER/hw4-griffinb11 # TODO: Change path to your hw 4 folder
 
 source /home/mjoyner/comp322/322_setup.sh
 
