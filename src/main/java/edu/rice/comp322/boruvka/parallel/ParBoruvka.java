@@ -63,7 +63,7 @@ public final class ParBoruvka extends AbstractBoruvka implements BoruvkaFactory<
                     if (!loopNode.lock.tryLock()) {
                         continue;
                     }
-                    if (loopNode.isDead){
+                    if (loopNode.isDead) {
                         loopNode.lock.unlock();
                         continue;
                     }
