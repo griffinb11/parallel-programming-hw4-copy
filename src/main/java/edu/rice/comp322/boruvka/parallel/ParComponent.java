@@ -22,6 +22,7 @@ public final class ParComponent extends Component<ParComponent> {
     public boolean isDead = false;
 
     public final Lock lock = new ReentrantLock();
+    //prevent two threads from accessing same component at same time
 
 
     protected ParComponent(final int nodeId) {

@@ -51,10 +51,11 @@ public final class ParBoruvka extends AbstractBoruvka implements BoruvkaFactory<
 
     private void computeBoruvka(final Queue<ParComponent> nodesLoaded, int nthreads) {
 
-
+        //initialize array of threads to iterate through
         final Thread[] threads = new Thread[nthreads];
 
         for (int i = 0; i < nthreads; i++) {
+            //create n threads each working on a component if available
             threads[i] = new Thread(()-> {
 
                 ParComponent loopNode = null;
@@ -109,6 +110,7 @@ public final class ParBoruvka extends AbstractBoruvka implements BoruvkaFactory<
                 System.out.println("Interrupted");
             }
         }
+        // don't set ans until all threads have been joined
         if (ans != null) {
             totalEdges = ans.totalEdges();
             totalWeight = ans.totalWeight();
